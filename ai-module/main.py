@@ -1,7 +1,7 @@
 from time import sleep
 from datetime import datetime
 
-# import requests
+import requests
 
 import conf
 from cam_info import extract_key_frames
@@ -9,14 +9,14 @@ from cam_info import extract_key_frames
 
 def send_people_count_to_backend(room_name, avg_people):
     print(f"Отправляю данные: room={room_name}, people_count={avg_people}")
-    # response = requests.post(
-    #     "http://localhost:8000/api/ai/people-count/",
-    #     json={
-    #         "room": room_name,
-    #         "people_count": avg_people
-    #     }
-    # )
-    # print(response.status_code, response.text)
+    response = requests.post(
+"http://10.10.47.98:8000/api/ai/people-count/",
+        data={
+            "room": room_name,
+            "people_count": avg_people
+        }
+    )
+    print(response.status_code, response.text)
 
 
 if __name__ == "__main__":
