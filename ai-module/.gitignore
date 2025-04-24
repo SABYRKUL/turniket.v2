@@ -1,0 +1,12 @@
+venv/
+yolov8n.pt
+
+media_temp/*
+!media_temp/.gitkeep
+
+captures/
+
+
+__pycache__/
+*.py[cod]
+*$py.class
