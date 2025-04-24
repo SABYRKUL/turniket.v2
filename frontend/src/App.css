@@ -8,10 +8,12 @@
 }
 
 body {
+  align-items:space-evenly;
   font-family: Arial, sans-serif;
   line-height: 1.6;
   background-color: #f4f4f4;
   color: #333;
+  justify-content: space-evenly;
 }
 
 /* Структура приложения */
