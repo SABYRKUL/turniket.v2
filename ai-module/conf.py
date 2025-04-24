@@ -1,0 +1,2 @@
+TURN_ON = True
+SLEEP_TIME = 2
