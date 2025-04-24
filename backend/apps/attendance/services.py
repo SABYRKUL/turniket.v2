@@ -2,6 +2,7 @@ from datetime import datetime, date
 from django.db.models import Avg
 from apps.core.models import Student, Group, TurnstileLog, AICameraData
 
+
 def get_student_attendance(student: Student, target_date: date) -> dict:
     logs = TurnstileLog.objects.filter(
         student=student,

@@ -27,15 +27,25 @@ class Student(models.Model):
     card_id = models.CharField(max_length=20, unique=True)
 
     class Meta:
-        indexes = [models.Index(fields=['card_id'])]  # Ускорение поиска по карте
+        indexes = [models.Index(fields=['card_id'])]
 
 class Group(models.Model):
     name = models.CharField(max_length=50)
+    student_count_today = models.IntegerField(default=0)
+    def reset_student_count(self):
+        self.student_count_today = 0
+        self.save()
     
+class Schedule(models.Model):
+    group = models.OneToOneField('Group', on_delete=models.CASCADE, related_name='schedule')
+    schedule_data = models.JSONField()
+
+    def __str__(self):
+        return f"Расписание для {self.group.name}"
 
 class TurnstileLog(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)  # Время автоматически проставляется сервером
+    timestamp = models.DateTimeField(auto_now_add=True)
 
 class AICameraData(models.Model):
     room = models.CharField(max_length=50)
