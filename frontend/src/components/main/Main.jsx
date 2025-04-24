@@ -8,39 +8,6 @@ const HOURS = {
 
 const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-const emp = {
-  group: {
-    it1: [
-      { name: 'Абдрахманов Ислам', id: '10001', password: '10001' },
-      { name: 'Акматалыева Альбина', id: '10002', password: '10002' },
-      { name: 'Асангалыева Сабина', id: '10003', password: '10003' },
-      { name: 'Асмат Махнур', id: '10004', password: '10004' },
-      { name: 'Ашимова Сайкал', id: '10005', password: '10005' },
-      { name: 'Аюпов Дильяр', id: '10006', password: '10006' },
-      { name: 'Докдурбаев Адилет', id: '11488', password: '11488' },
-      { name: 'Кочкуров Богдан', id: '10008', password: '10008' },
-      { name: 'Люцкан Сахиб', id: '10009', password: '10009' },
-      { name: 'Мендибаев Марсель', id: '17777', password: '17777' }
-    ],
-    it2: [
-      { name: 'Назарбеков Тилек', id: '10011', password: '10011' },
-      { name: 'Русланов Данияр', id: '10012', password: '10012' },
-      { name: 'Сабиров Азим', id: '10013', password: '10013' },
-      { name: 'Сабыркулов Атабек', id: '14444', password: '14444' },
-      { name: 'Сайдинов Баэл', id: '10015', password: '10015' },
-      { name: 'Тогузбаев Даниэль', id: '10016', password: '10016' },
-      { name: 'Торомырзаева Тахмина', id: '10017', password: '10017' },
-      { name: 'Туратбеков Атлант', id: '10018', password: '10018' },
-      { name: 'Хабибрахманов Руфат', id: '15051', password: '15051' },
-      { name: 'Эшеналиева Софи', id: '10020', password: '10020' }
-    ]
-  }
-};
-
-const admins = [
-  { id: 'admin', password: 'admin123', name: 'Админ' }
-];
-
 const Main = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [attendance, setAttendance] = useState(() => {
@@ -55,40 +22,33 @@ const Main = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const allStudents = [...emp.group.it1, ...emp.group.it2];
 
-  const login = () => {
-    const admin = admins.find(a => a.id === loginId && a.password === password);
-    if (admin) {
-      setCurrentUser({ id: admin.id, name: admin.name, role: 'admin' });
-      setError('');
-      return;
-    }
-    const student = allStudents.find(s => s.id === loginId && s.password === password);
-    if (student) {
-      setCurrentUser({ id: student.id, name: student.name, role: 'student' });
-      setError('');
-    } else {
-      setError('Неверный логин или пароль');
+  // Логин
+  const login = async () => {
+    try {
+      const response = await fetch('http://10.10.47.98:8000/api/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ loginId, password }),
+      });
+
+      const data = await response.json();
+      console.log(data.message)
+      if (response.ok) {
+        const { id, name, role } = data;
+        setCurrentUser({ id, name, role });
+        setError('');
+      } else {
+        setError(data.message || 'Неверный логин или пароль');
+      }
+    } catch (error) {
+      setError('Произошла ошибка при подключении к серверу');
     }
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (isPresent && lastPresenceTime) {
-        const now = new Date();
-        const diff = (now - lastPresenceTime) / 1000 / 60;
-
-        if (diff > 30 && now.getHours() >= HOURS.start && now.getHours() < HOURS.end) {
-          markAttendance('skipped', lastPresenceTime.toISOString().split('T')[0]);
-          setIsPresent(false);
-          setLastPresenceTime(null);
-        }
-      }
-    }, 60000);
-    return () => clearInterval(timer);
-  }, [isPresent, lastPresenceTime]);
-
+  // Обновление посещаемости в localStorage
   const markAttendance = (status, dateStr, studentId = currentUser?.id) => {
     const updatedAttendance = {
       ...attendance,
@@ -98,11 +58,11 @@ const Main = () => {
       }
     };
 
-    // Сохраняем обновленную посещаемость в localStorage
     setAttendance(updatedAttendance);
     localStorage.setItem('attendance', JSON.stringify(updatedAttendance));
   };
 
+  // Обработка входа и выхода на турникете
   const handleTurnstileEntry = () => {
     const now = new Date();
     if (currentUser?.role === 'student') {
@@ -121,10 +81,12 @@ const Main = () => {
     }
   };
 
+  // Тема
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev);
   };
 
+  // Получение дней месяца
   const getMonthlyDays = (monthIndex) => {
     const start = new Date(new Date().getFullYear(), monthIndex, 1);
     const end = new Date(new Date().getFullYear(), monthIndex + 1, 0);
@@ -135,6 +97,7 @@ const Main = () => {
     return daysInMonth;
   };
 
+  // Получение класса для цвета ячейки (зеленая, красная и т.д.)
   const getColorClass = (dateStr) => {
     const id = currentUser?.role === 'admin' ? selectedStudentId : currentUser?.id;
     if (!id || !attendance[id]) return 'square';
@@ -145,6 +108,7 @@ const Main = () => {
     return 'square';
   };
 
+  // Подсчёт посещений за месяц
   const countMonthlyAttendance = () => {
     const counts = {};
     const studentId = currentUser?.role === 'admin' ? selectedStudentId : currentUser?.id;
@@ -158,6 +122,7 @@ const Main = () => {
     return counts;
   };
 
+  // Клик по ячейке посещаемости
   const handleSquareClick = (dateStr) => {
     if (currentUser?.role === 'admin' && selectedStudentId) {
       const currentStatus = attendance[selectedStudentId]?.[dateStr];

@@ -1,207 +1,78 @@
-/* Основные стили для контейнера */
+/* Main.css */
+
+/* Основной контейнер */
 .container {
-    width: 100%;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-    transition: background-color 0.3s, color 0.3s, border 0.3s; /* Плавный переход при смене темы */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: white;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Форма логина */
+.login-form {
+  background-color: #ffffff;
+  padding: 50px;
+  border-radius: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  text-align: center;
+}
+
+.login-form h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Поля ввода */
+.login-form input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* Кнопка */
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-form button:hover {
+  background-color: #45a049;
+}
+
+/* Сообщение об ошибке */
+.error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Сообщение успешного логина */
+.success {
+  color: #2ecc71;
+  font-size: 18px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* Мобильная адаптивность */
+@media (max-width: 400px) {
+  .login-form {
+    width: 90%;
   }
-  
-  /* Светлая тема */
-  .container.light {
-    background-color: #f4f4f4;
-    color: #333;
-  }
-  
-  /* Тёмная тема */
-  .container.dark {
-    background-color: #333;
-    color: #f4f4f4;
-  }
-  
-  /* Заголовок */
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: inherit; /* Наследует цвет из контейнера */
-  }
-  
-  /* Кнопки */
-  .toggle-button, .theme-toggle {
-    display: block;
-    width: 180px;
-    margin: 0 auto 20px;
-    padding: 8px;
-    font-size: 14px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .toggle-button:hover, .theme-toggle:hover {
-    background-color: #45a049;
-  }
-  
-  /* Календарь */
-  .heatmap-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .heatmap {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .month {
-    margin: 15px;
-    text-align: center;
-  }
-  
-  .month h3 {
-    font-size: 16px;
-    margin-bottom: 10px;
-    color: inherit; /* Наследует цвет из контейнера */
-  }
-  
-  .month-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 20px); /* 7 дней в неделе */
-    gap: 4px;
-    justify-content: center;
-    margin-bottom: 10px;
-  }
-  
-  .square {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-    background-color: #e0e0e0;
-    cursor: pointer;
-  }
-  
-  /* Граница для квадратиков в светлой теме */
-  .container.light .square {
-    border: 1px solid #aaa; /* Более заметная граница в светлой теме */
-  }
-  
-  /* Цвета для состояния посещаемости */
-  .green {
-    background-color: #4caf50;
-  }
-  
-  .red {
-    background-color: #f44336;
-  }
-  
-  .month-stats {
-    font-size: 12px;
-    color: inherit; /* Наследует цвет из контейнера */
-  }
-  
-  .month-stats div {
-    margin-bottom: 5px;
-  }
-  
-  /* Кнопки темы */
-  .theme-toggle {
-    color: inherit; /* Наследует цвет из контейнера */
-  }
-  
-  .container {
-    padding: 20px;
-    font-family: sans-serif;
-  }
-  
-  .login input,
-  .register-form input {
-    margin: 5px;
-    padding: 8px;
-    width: 200px;
-  }
-  
-  button {
-    margin: 5px;
-    padding: 8px 12px;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    background-color: #1976d2;
-    color: white;
-  }
-  
-  .theme-toggle {
-    margin: 20px 0;
-  }
-  
-  .turnstile-button {
-    margin: 10px;
-    background-color: #388e3c;
-  }
-  
-  .heatmap-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .month {
-    margin: 10px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 10px;
-    width: 230px;
-  }
-  
-  .month h3 {
-    text-align: center;
-  }
-  
-  .month-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-  }
-  
-  .square {
-    width: 20px;
-    height: 20px;
-    background-color: #eee;
-    border-radius: 3px;
-  }
-  
-  .square.green {
-    background-color: #4caf50;
-  }
-  
-  .square.red {
-    background-color: #f44336;
-  }
-  
-  .square.yellow {
-    background-color: #ffeb3b;
-  }
-  
-  .month-stats {
-    margin-top: 5px;
-    text-align: center;
-  }
-  
-  .light {
-    background-color: #fff;
-    color: #000;
-  }
-  
-  .dark {
-    background-color: #121212;
-    color: #f5f5f5;
-  }
-  
-  select {
-    padding: 6px;
-    margin-left: 10px;
-  }
-  
+}
