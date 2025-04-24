@@ -111,3 +111,97 @@
     color: inherit; /* Наследует цвет из контейнера */
   }
   
+  .container {
+    padding: 20px;
+    font-family: sans-serif;
+  }
+  
+  .login input,
+  .register-form input {
+    margin: 5px;
+    padding: 8px;
+    width: 200px;
+  }
+  
+  button {
+    margin: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #1976d2;
+    color: white;
+  }
+  
+  .theme-toggle {
+    margin: 20px 0;
+  }
+  
+  .turnstile-button {
+    margin: 10px;
+    background-color: #388e3c;
+  }
+  
+  .heatmap-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .month {
+    margin: 10px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    width: 230px;
+  }
+  
+  .month h3 {
+    text-align: center;
+  }
+  
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  
+  .square {
+    width: 20px;
+    height: 20px;
+    background-color: #eee;
+    border-radius: 3px;
+  }
+  
+  .square.green {
+    background-color: #4caf50;
+  }
+  
+  .square.red {
+    background-color: #f44336;
+  }
+  
+  .square.yellow {
+    background-color: #ffeb3b;
+  }
+  
+  .month-stats {
+    margin-top: 5px;
+    text-align: center;
+  }
+  
+  .light {
+    background-color: #fff;
+    color: #000;
+  }
+  
+  .dark {
+    background-color: #121212;
+    color: #f5f5f5;
+  }
+  
+  select {
+    padding: 6px;
+    margin-left: 10px;
+  }
+  
