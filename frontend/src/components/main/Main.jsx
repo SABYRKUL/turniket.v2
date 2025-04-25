@@ -1,92 +1,184 @@
+  
 import React, { useState, useEffect } from 'react';
 import './Main.css';
-
-const HOURS = {
-  start: 8,
-  end: 15
-};
-
 const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-
 const Main = () => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [attendance, setAttendance] = useState(() => {
     const savedAttendance = localStorage.getItem('attendance');
     return savedAttendance ? JSON.parse(savedAttendance) : {};
   });
-  const [isPresent, setIsPresent] = useState(false);
-  const [lastPresenceTime, setLastPresenceTime] = useState(null);
+  const [turnstileStatus, setTurnstileStatus] = useState(() => {
+    const savedStatus = localStorage.getItem('turnstileStatus');
+    return savedStatus || '';
+  });
+  const [turnstileEntryTime, setTurnstileEntryTime] = useState(() => {
+    const savedEntryTime = localStorage.getItem('turnstileEntryTime');
+    return savedEntryTime ? new Date(savedEntryTime) : null;
+  });
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-
-  // Логин
+  const [lastAction, setLastAction] = useState(null);
+  const [monthlyCounts, setMonthlyCounts] = useState(() => {
+    const savedCounts = localStorage.getItem('monthlyCounts');
+    return savedCounts ? JSON.parse(savedCounts) : {};
+  });
+  // Функция для определения статуса посещения на основе времени
+  const determineAttendanceStatus = (entryTime) => {
+    const hour = entryTime.getHours();
+    if (hour < 9) return 'present';
+    if (hour < 10) return 'late';
+    return 'absent';
+  };
+  // Обновленная функция входа
   const login = async () => {
     try {
-      const response = await fetch('http://10.10.47.98:8000/api/login/', {
+      const response = await fetch('http://10.10.51.82:8000/api/login/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ loginId, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginId }),
       });
-
+      
       const data = await response.json();
-      console.log(data.message)
       if (response.ok) {
-        const { id, name, role } = data;
-        setCurrentUser({ id, name, role });
+        const { id, name, role, attendance: userAttendance } = data;
+        const user = { id, name, role };
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(user);
+        
+        const updatedAttendance = {
+          ...attendance,
+          [id]: userAttendance,
+        };
+        localStorage.setItem('attendance', JSON.stringify(updatedAttendance));
+        setAttendance(updatedAttendance);
         setError('');
       } else {
-        setError(data.message || 'Неверный логин или пароль');
+        setError(data.message || 'Неверный логин');
       }
     } catch (error) {
       setError('Произошла ошибка при подключении к серверу');
     }
   };
-
-  // Обновление посещаемости в localStorage
+  // Функция выхода из системы
+  const logout = () => {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('attendance');
+    localStorage.removeItem('turnstileStatus');
+    localStorage.removeItem('turnstileEntryTime');
+    localStorage.removeItem('monthlyCounts');
+    localStorage.removeItem('lastAction');
+    setCurrentUser(null);
+    setAttendance({});
+    setTurnstileStatus('');
+    setTurnstileEntryTime(null);
+    setMonthlyCounts({});
+    setLastAction(null);
+  };
+  // Функция отметки посещаемости
   const markAttendance = (status, dateStr, studentId = currentUser?.id) => {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    let attendanceStatus;
+    if (status === 'present') {
+      if (hour < 9) {
+        attendanceStatus = 'present';
+      } else if (hour === 9 && minute <= 15) {
+        attendanceStatus = 'present';
+      } else if (hour === 9 || (hour === 10 && minute <= 0)) {
+        attendanceStatus = 'late';
+      } else {
+        attendanceStatus = 'absent';
+      }
+    } else {
+      attendanceStatus = status;
+    }
     const updatedAttendance = {
       ...attendance,
       [studentId]: {
         ...(attendance[studentId] || {}),
-        [dateStr]: status
-      }
+        [dateStr]: {
+          status: attendanceStatus,
+          time: now.toISOString(),
+          details: {
+            entryTime: now.toISOString(),
+            isLate: attendanceStatus === 'late',
+            minutesLate: attendanceStatus === 'late' ? 
+              (hour - 9) * 60 + minute : 0
+          }
+        },
+      },
     };
-
     setAttendance(updatedAttendance);
     localStorage.setItem('attendance', JSON.stringify(updatedAttendance));
-  };
-
-  // Обработка входа и выхода на турникете
-  const handleTurnstileEntry = () => {
-    const now = new Date();
-    if (currentUser?.role === 'student') {
-      markAttendance('present', now.toISOString().split('T')[0]);
-      setLastPresenceTime(now);
-      setIsPresent(true);
+    if (attendanceStatus === 'present' || attendanceStatus === 'late') {
+      incrementMonthlyAttendance(dateStr);
     }
   };
-
+  // Функция подсчета посещений
+  const incrementMonthlyAttendance = (dateStr) => {
+    const month = new Date(dateStr).getMonth();
+    const updatedCounts = { ...monthlyCounts };
+    updatedCounts[month] = (updatedCounts[month] || 0) + 1;
+    localStorage.setItem('monthlyCounts', JSON.stringify(updatedCounts));
+    setMonthlyCounts(updatedCounts);
+  };
+  // Функция прохода через турникет
+  const handleTurnstilePass = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    
+    if (currentUser?.role === 'student') {
+      if (lastAction === 'exit') {
+        markAttendance('present', dateStr);
+        setTurnstileStatus('green');
+        setTurnstileEntryTime(now);
+        setLastAction('entry');
+        
+        localStorage.setItem('turnstileStatus', 'green');
+        localStorage.setItem('turnstileEntryTime', now.toISOString());
+        localStorage.setItem('lastAction', 'entry');
+        
+        setTimeout(() => {
+          setTurnstileStatus('');
+          localStorage.setItem('turnstileStatus', '');
+        }, 3000);
+      } else {
+        setError('Необходимо сначала выйти');
+      }
+    }
+  };
+  // Функция выхода через турникет
   const handleTurnstileExit = () => {
     const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    
     if (currentUser?.role === 'student') {
-      markAttendance('absent', now.toISOString().split('T')[0]);
-      setIsPresent(false);
-      setLastPresenceTime(null);
+      if (lastAction !== 'exit') {
+        markAttendance('absent', dateStr);
+        setTurnstileStatus('red');
+        setTurnstileEntryTime(null);
+        setLastAction('exit');
+        
+        localStorage.setItem('turnstileStatus', 'red');
+        localStorage.removeItem('turnstileEntryTime');
+        localStorage.setItem('lastAction', 'exit');
+        
+        setTimeout(() => {
+          setTurnstileStatus('');
+          localStorage.setItem('turnstileStatus', '');
+        }, 3000);
+      } else {
+        setError('Необходимо сначала войти');
+      }
     }
   };
-
-  // Тема
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
-
-  // Получение дней месяца
+  // Вспомогательные функции
   const getMonthlyDays = (monthIndex) => {
     const start = new Date(new Date().getFullYear(), monthIndex, 1);
     const end = new Date(new Date().getFullYear(), monthIndex + 1, 0);
@@ -96,43 +188,30 @@ const Main = () => {
     }
     return daysInMonth;
   };
-
-  // Получение класса для цвета ячейки (зеленая, красная и т.д.)
   const getColorClass = (dateStr) => {
-    const id = currentUser?.role === 'admin' ? selectedStudentId : currentUser?.id;
+    const id = currentUser?.id;
     if (!id || !attendance[id]) return 'square';
-    const status = attendance[id][dateStr];
-    if (status === 'present') return 'square green';
-    if (status === 'absent') return 'square red';
-    if (status === 'skipped') return 'square yellow';
-    return 'square';
-  };
-
-  // Подсчёт посещений за месяц
-  const countMonthlyAttendance = () => {
-    const counts = {};
-    const studentId = currentUser?.role === 'admin' ? selectedStudentId : currentUser?.id;
-    const studentAttendance = attendance[studentId] || {};
-    Object.entries(studentAttendance).forEach(([date, status]) => {
-      if (status === 'present') {
-        const month = new Date(date).getMonth();
-        counts[month] = (counts[month] || 0) + 1;
-      }
-    });
-    return counts;
-  };
-
-  // Клик по ячейке посещаемости
-  const handleSquareClick = (dateStr) => {
-    if (currentUser?.role === 'admin' && selectedStudentId) {
-      const currentStatus = attendance[selectedStudentId]?.[dateStr];
-      const newStatus = currentStatus === 'present' ? 'absent' : 'present';
-      markAttendance(newStatus, dateStr, selectedStudentId);
+    const record = attendance[id][dateStr];
+    if (!record) return 'square';
+    
+    switch (record.status) {
+      case 'present': return 'square green';
+      case 'late': return 'square yellow';
+      case 'absent': return 'square red';
+      default: return 'square';
     }
   };
-
-  const monthlyCounts = countMonthlyAttendance();
-
+  const getTodayDateStr = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+  // Загрузка последнего действия при монтировании
+  useEffect(() => {
+    const savedLastAction = localStorage.getItem('lastAction');
+    if (savedLastAction) {
+      setLastAction(savedLastAction);
+    }
+  }, []);
   return (
     <div className={`container ${isDarkMode ? 'dark' : 'light'}`}>
       {!currentUser ? (
@@ -144,78 +223,69 @@ const Main = () => {
             value={loginId}
             onChange={(e) => setLoginId(e.target.value)}
           />
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
           <button onClick={login}>Войти</button>
           {error && <div className="error">{error}</div>}
         </div>
       ) : (
         <div>
-          <h2>Присутствие: {currentUser.name}</h2>
-          {currentUser.role === 'admin' && (
-            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-              <label htmlFor="student-select">Выберите студента: </label>
-              <select
-                id="student-select"
-                value={selectedStudentId || ''}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-              >
-                <option value="" disabled>-- Студент --</option>
-                {allStudents.map(student => (
-                  <option key={student.id} value={student.id}>{student.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <h2 className="Att">Присутствие: {currentUser.name}</h2>
+          <button onClick={logout}>Выйти</button>
+          
           {currentUser.role === 'student' && (
-            <div>
-              <button className="turnstile-button" onClick={handleTurnstileEntry}>
-                Проход турникета
+            <div className="turnstile-controls">
+              <button
+                className="turnstile-button"
+                onClick={handleTurnstilePass}
+                data-status={turnstileStatus === 'green' ? 'green' : ''}
+              >
+                Войти через турникет
               </button>
-              <button className="turnstile-button" onClick={handleTurnstileExit}>
-                Выход из турникета
+              <button
+                className="turnstile-button"
+                onClick={handleTurnstileExit}
+                data-status={turnstileStatus === 'red' ? 'red' : ''}
+              >
+                Выйти через турникет
               </button>
             </div>
           )}
-          <button className="theme-toggle" onClick={toggleTheme}>
-            {isDarkMode ? 'Светлая тема' : 'Тёмная тема'}
-          </button>
-          <div className="heatmap-container">
-            <div className="heatmap">
-              {months.map((month, i) => {
-                const monthlyDays = getMonthlyDays(i);
-                return (
-                  <div key={i} className="month">
-                    <h3>{month}</h3>
-                    <div className="month-grid">
-                      {monthlyDays.map((date, index) => {
-                        const dateStr = date.toISOString().split('T')[0];
-                        return (
-                          <div
-                            key={index}
-                            title={dateStr}
-                            className={getColorClass(dateStr)}
-                            onClick={() => handleSquareClick(dateStr)}
-                          ></div>
-                        );
-                      })}
-                    </div>
-                    <div className="month-stats">
-                      {month}: {monthlyCounts[i] || 0} посещений
-                    </div>
-                  </div>
-                );
-              })}
+          {currentUser.role === 'admin' && (
+            <div className="admin-panel">
+              <h3>Панель администратора</h3>
+              <div className="admin-controls">
+                <button onClick={() => setIsDarkMode(!isDarkMode)}>
+                  {isDarkMode ? 'Светлая тема' : 'Темная тема'}
+                </button>
+              </div>
             </div>
+          )}
+          <div className="months-container">
+            {months.map((month, index) => (
+              <div key={month} className="month">
+                <h3>{month}</h3>
+                <div className="month-grid">
+                  {getMonthlyDays(index).map((date) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    return (
+                      <div
+                        key={dateStr}
+                        className={`${getColorClass(dateStr)} ${
+                          dateStr === getTodayDateStr() ? 'today' : ''
+                        }`}
+                        title={dateStr}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="month-stats">
+                  Посещений: {monthlyCounts[index] || 0}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
     </div>
   );
 };
-
 export default Main;
